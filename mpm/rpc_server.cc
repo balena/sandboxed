@@ -50,18 +50,17 @@ void ServerImpl::dispatchMessage(const IPC::Message& message) {
     it = mListeners.find(fname);
     if (it != mListeners.end()) {
         Value *retval = (*it).second->invoke(params);
-        if (retval && retval->GetType() != Value::TYPE_NULL) {
-            ListValue ret;
-            ret.Append(retval);
-            IPC::Message *msg =
-                new IPC::Message(message.routing_id(),
-                    message.type(), IPC::Message::PRIORITY_NORMAL);
-            msg->set_reply();
-            WriteParam(msg, ret);
-            mChannelProxy->Send(msg);
-        }
-        else if (retval)
-            delete retval;
+
+        DCHECK(retval != NULL) << "Invalid function call";
+
+        ListValue ret;
+        ret.Append(retval);
+        IPC::Message *msg =
+            new IPC::Message(message.routing_id(),
+                message.type(), IPC::Message::PRIORITY_NORMAL);
+        msg->set_reply();
+        WriteParam(msg, ret);
+        mChannelProxy->Send(msg);
     }
     else {
         // TODO: errors

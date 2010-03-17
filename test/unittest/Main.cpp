@@ -103,6 +103,30 @@ TEST(MPM_Broker, Thread) {
     delete returning_process;
 }
 
+TEST(MPM_Broker, VoidFunc) {
+    
+    // Create a new process
+    mpm::TargetProcess *process =
+        mpm::Broker::instance()->spawnTarget();
+    ASSERT_TRUE(process);
+    process->client()->waitForConnection();
+
+    RPC::ClientCall<void()> voidfunc("voidfunc");
+
+    LONG last = lRun;
+    voidfunc(process->client());
+    ASSERT_EQ(lRun, last+1);
+
+    RPC::ClientCall<bool()> endProcess("endProcess");
+    endProcess(process->client()); // end_process
+
+    // Get the process->client()
+    mpm::TargetProcess *returning_process = 
+            mpm::Broker::instance()->waitForTargets();
+    ASSERT_TRUE(returning_process);
+    delete returning_process;
+}
+
 TEST(MPM_Broker, Message) {
     
     // Create a new process
@@ -127,7 +151,7 @@ TEST(MPM_Broker, Message) {
     RPC::ClientCall<int(int,int,int,int)> sum4("sum4");
     RPC::ClientCall<int(int,int,int,int,int)> sum5("sum5");
     RPC::ClientCall<std::vector<int>(int, int, int, int)> list("list");
-    RPC::ClientCall<void()> endProcess("endProcess");
+    RPC::ClientCall<bool()> endProcess("endProcess");
 
     // Call all functions
     ASSERT_EQ(one(process->client()), 1);
@@ -228,6 +252,7 @@ void doBroker(int argc, char *argv[])
 class TargetUnit
 {
 public:
+    void voidfunc() { ++lRun; }
     int one() { return 1; }
     bool True() { return true; }
     bool False() { return false; }
@@ -285,6 +310,8 @@ void doTarget(int argc, char *argv[])
 
     TargetUnit unit;
 
+    target->server()->registerCallback("voidfunc", new RPC::ServerCall<void()>(
+        &unit, &TargetUnit::voidfunc));
     target->server()->registerCallback("one", new RPC::ServerCall<int()>(
         &unit, &TargetUnit::one));
     target->server()->registerCallback("True", new RPC::ServerCall<bool()>(
