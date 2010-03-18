@@ -12,6 +12,8 @@
 #include <base/logging.h>
 #include <base/win_util.h>
 #include <base/process_util.h>
+#include <base/time.h>
+#include <base/timer.h>
 #include <sandbox/src/sandbox_factory.h>
 #include <sandbox/src/dep.h>
 
@@ -47,6 +49,10 @@ Platform::Platform() {
     CommandLine::Init(0, NULL);
 
     main_loop_ = new MessageLoop(MessageLoop::TYPE_IO);
+
+    base::Time::Now();
+    base::TimeTicks::Now();
+    base::TimeTicks::HighResNow();
 
     logging::InitLogging(NULL, logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
         logging::DONT_LOCK_LOG_FILE, logging::DELETE_OLD_LOG_FILE);
