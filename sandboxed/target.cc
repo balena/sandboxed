@@ -15,16 +15,17 @@
 #include <chrome/common/ipc_message_utils.h>
 #include <base/time.h>
 #include <base/scoped_ptr.h>
-#include <base/singleton.h>
 #include <base/thread.h>
 #include <base/waitable_event.h>
 #include <base/condition_variable.h>
+#include <sandbox/src/win_utils.h>
 
 #include <map>
 
 namespace sandboxed {
 
-class TargetImpl : public Target
+class TargetImpl : public Target,
+                   public sandbox::SingletonBase<TargetImpl>
 {
 public:
     TargetImpl();
@@ -47,7 +48,7 @@ bool isBroker();
 Target *Target::instance() {
     if (isBroker())
         return 0;
-    return Singleton<TargetImpl>::get();
+    return TargetImpl::GetInstance();
 }
 
 TargetImpl::TargetImpl()

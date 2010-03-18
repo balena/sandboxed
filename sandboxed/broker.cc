@@ -11,15 +11,16 @@
 #include <sandboxed/target_process_internal.h>
 #include <chrome/common/ipc_channel_proxy.h>
 #include <base/thread.h>
-#include <base/singleton.h>
 #include <sandbox/src/sandbox_factory.h>
+#include <sandbox/src/win_utils.h>
 #include <vector>
 
 namespace sandboxed {
 
 static int cWaitProcessTimeOut = 100;
 
-class BrokerImpl : public Broker
+class BrokerImpl : public Broker,
+                   public sandbox::SingletonBase<BrokerImpl>
 {
 public:
     BrokerImpl();
@@ -38,6 +39,8 @@ protected:
     HANDLE mWakeupEvent;
 
     bool checkAllTargets(DWORD aTimeOut, DWORD *aResult);
+
+    DISALLOW_EVIL_CONSTRUCTORS(BrokerImpl);
 };
 
 bool isBroker() {
@@ -49,7 +52,7 @@ bool isBroker() {
 Broker* Broker::instance() {
     if (!isBroker())
         return 0;
-    return Singleton<BrokerImpl>::get();
+    return BrokerImpl::GetInstance();
 }
 
 BrokerImpl::BrokerImpl() {
