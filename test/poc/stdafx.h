@@ -4,7 +4,6 @@
 #endif
 #define _WTL_USE_CSTRING
  
-#define NOMINMAX
 #include <atlbase.h>       // base ATL classes
 #include <atlapp.h>        // base WTL classes
 extern CAppModule _Module; // WTL version of CComModule

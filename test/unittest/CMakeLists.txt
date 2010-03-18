@@ -17,10 +17,8 @@ INCLUDE_DIRECTORIES(
   ${BOOST_TR1_INCLUDE_DIR}
 )
 
-ADD_DEFINITIONS(-DNOMINMAX)
-
-ADD_EXECUTABLE(mpm_unittest Main.cpp)
-ADD_DEPENDENCIES(mpm_unittest mpm)
-TARGET_LINK_LIBRARIES(mpm_unittest mpm ${GTEST_LIBRARIES} ${GMOCK_LIBRARIES})
+ADD_EXECUTABLE(sandboxed_unittest Main.cpp)
+ADD_DEPENDENCIES(sandboxed_unittest sandboxed)
+TARGET_LINK_LIBRARIES(sandboxed_unittest sandboxed ${GTEST_LIBRARIES} ${GMOCK_LIBRARIES})
 
 # Modeline for vim: set tw=79 et ts=4:

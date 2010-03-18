@@ -12,9 +12,9 @@
 #define _HAS_TR1 1
 #endif
 
-#include <mpm/platform.h>
-#include <mpm/broker.h>
-#include <mpm/target.h>
+#include <sandboxed/platform.h>
+#include <sandboxed/broker.h>
+#include <sandboxed/target.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -28,16 +28,16 @@ namespace {
 
 DWORD WINAPI waitForTargets_Thread(LPVOID lpParam)
 { 
-    mpm::TargetProcess *returning_process =
-        mpm::Broker::instance()->waitForTargets();
+    sandboxed::TargetProcess *returning_process =
+        sandboxed::Broker::instance()->waitForTargets();
     return 0;
 }
 
 } // empty namespace
 
-TEST(MPM_Broker, SpawnSimple) {
-    mpm::TargetProcess *process =
-        mpm::Broker::instance()->spawnTarget();
+TEST(Sandboxed_Broker, SpawnSimple) {
+    sandboxed::TargetProcess *process =
+        sandboxed::Broker::instance()->spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -45,18 +45,18 @@ TEST(MPM_Broker, SpawnSimple) {
     bool result = RPC::ClientCall<bool()>("endProcess")(process->client());
     ASSERT_EQ(result, true);
 
-    mpm::TargetProcess *returning_process =
-        mpm::Broker::instance()->waitForTargets();
+    sandboxed::TargetProcess *returning_process =
+        sandboxed::Broker::instance()->waitForTargets();
     ASSERT_EQ(returning_process, process);
     delete returning_process;
 }
 
-TEST(MPM_Broker, PeekTargets) {
+TEST(Sandboxed_Broker, PeekTargets) {
     LONG last = lRun;
     
-    mpm::TargetProcess *process, *returning_process;
+    sandboxed::TargetProcess *process, *returning_process;
    
-    process = mpm::Broker::instance()->spawnTarget();
+    process = sandboxed::Broker::instance()->spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -66,7 +66,7 @@ TEST(MPM_Broker, PeekTargets) {
     ASSERT_EQ(result, true);
 
     while(1) {
-        if (mpm::Broker::instance()->peekTargets(&returning_process))
+        if (sandboxed::Broker::instance()->peekTargets(&returning_process))
             break;
         Sleep(100);
     }
@@ -75,10 +75,10 @@ TEST(MPM_Broker, PeekTargets) {
     delete returning_process;
 }
 
-TEST(MPM_Broker, Thread) {
+TEST(Sandboxed_Broker, Thread) {
     LONG last = lRun;
 
-    mpm::TargetProcess *process = mpm::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process = sandboxed::Broker::instance()->spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -87,7 +87,7 @@ TEST(MPM_Broker, Thread) {
     HANDLE hThread;
     DWORD dwThreadId;
     hThread = CreateThread(NULL, 0, waitForTargets_Thread, process, 0, &dwThreadId);
-    mpm::Broker::instance()->wakeup();
+    sandboxed::Broker::instance()->wakeup();
 
     DWORD dwRes = WaitForSingleObject(hThread, 1000);
     ASSERT_EQ(dwRes, WAIT_OBJECT_0);
@@ -97,17 +97,17 @@ TEST(MPM_Broker, Thread) {
     ASSERT_EQ(result, true);
 
     // Get the process
-    mpm::TargetProcess *returning_process = 
-            mpm::Broker::instance()->waitForTargets();
+    sandboxed::TargetProcess *returning_process = 
+            sandboxed::Broker::instance()->waitForTargets();
     ASSERT_EQ(process, returning_process);
     delete returning_process;
 }
 
-TEST(MPM_Broker, VoidFunc) {
+TEST(Sandboxed_Broker, VoidFunc) {
     
     // Create a new process
-    mpm::TargetProcess *process =
-        mpm::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process =
+        sandboxed::Broker::instance()->spawnTarget();
     ASSERT_TRUE(process);
     process->client()->waitForConnection();
 
@@ -121,17 +121,17 @@ TEST(MPM_Broker, VoidFunc) {
     endProcess(process->client()); // end_process
 
     // Get the process->client()
-    mpm::TargetProcess *returning_process = 
-            mpm::Broker::instance()->waitForTargets();
+    sandboxed::TargetProcess *returning_process = 
+            sandboxed::Broker::instance()->waitForTargets();
     ASSERT_TRUE(returning_process);
     delete returning_process;
 }
 
-TEST(MPM_Broker, Message) {
+TEST(Sandboxed_Broker, Message) {
     
     // Create a new process
-    mpm::TargetProcess *process =
-        mpm::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process =
+        sandboxed::Broker::instance()->spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -203,21 +203,21 @@ TEST(MPM_Broker, Message) {
     endProcess(process->client()); // end_process
 
     // Get the process->client()
-    mpm::TargetProcess *returning_process = 
-            mpm::Broker::instance()->waitForTargets();
+    sandboxed::TargetProcess *returning_process = 
+            sandboxed::Broker::instance()->waitForTargets();
     ASSERT_TRUE(returning_process);
     delete returning_process;
 }
 
-TEST(MPM_Broker, MoreProcess) {
+TEST(Sandboxed_Broker, MoreProcess) {
     
     int i;
     LONG last = lRun;
-    std::vector<mpm::TargetProcess *> processList;
+    std::vector<sandboxed::TargetProcess *> processList;
 
     for (i = 0; i < MAXIMUM_WAIT_OBJECTS+10; i++) {
-        mpm::TargetProcess *process =
-            mpm::Broker::instance()->spawnTarget();
+        sandboxed::TargetProcess *process =
+            sandboxed::Broker::instance()->spawnTarget();
         ASSERT_TRUE(process);
         process->client()->waitForConnection();
         processList.push_back(process);
@@ -227,14 +227,14 @@ TEST(MPM_Broker, MoreProcess) {
     RPC::ClientCall<bool()> endProcess("endProcess");
 
 	while (processList.size() > 0){
-        std::vector<mpm::TargetProcess *>::iterator it =
+        std::vector<sandboxed::TargetProcess *>::iterator it =
             processList.begin();
 
         ASSERT_EQ(one((*it)->client()), 1);
         ASSERT_EQ(endProcess((*it)->client()), true);
 
-        mpm::TargetProcess *returning_process = 
-            mpm::Broker::instance()->waitForTargets();
+        sandboxed::TargetProcess *returning_process = 
+            sandboxed::Broker::instance()->waitForTargets();
         ASSERT_EQ(*it, returning_process);
         delete returning_process;
 
@@ -293,7 +293,7 @@ public:
         return list; 
     }
     bool endProcess() {
-        mpm::Platform::instance()->wakeup();
+        sandboxed::Platform::instance()->wakeup();
         return true;
     }
 };
@@ -304,8 +304,8 @@ void doTarget(int argc, char *argv[])
 
     ++lRun;
 
-    mpm::Target *target =
-        mpm::Target::instance();
+    sandboxed::Target *target =
+        sandboxed::Target::instance();
     target->client()->waitForConnection();
 
     TargetUnit unit;
@@ -346,14 +346,14 @@ void doTarget(int argc, char *argv[])
     target->server()->registerCallback("endProcess", new RPC::ServerCall<bool()>(
         &unit, &TargetUnit::endProcess));
 
-    mpm::Platform::instance()->waitForEvents();
+    sandboxed::Platform::instance()->waitForEvents();
     target->shutdown();
 }
 
 int main(int argc, char *argv[])
 {
-    mpm::Platform platform;
-    if (mpm::Broker::instance())
+    sandboxed::Platform platform;
+    if (sandboxed::Broker::instance())
         doBroker(argc, argv);
     else
         doTarget(argc, argv);
