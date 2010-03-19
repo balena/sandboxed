@@ -100,7 +100,7 @@ int APIENTRY _tWinMain(HINSTANCE instance, HINSTANCE, wchar_t* command_line,
 
     base::AtExitManager exit_manager;
     CommandLine::Init(0, NULL);
-    MessageLoop loop(MessageLoop::TYPE_IO);
+    MessageLoop loop;
 
     sandbox::BrokerServices* broker_service =
         sandbox::SandboxFactory::GetBrokerServices();

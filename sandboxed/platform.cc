@@ -21,7 +21,7 @@ namespace sandboxed {
 
 static Platform* g_top_platform = NULL;
 
-Platform::Platform() {
+Platform::Platform(MessageLoop::Type type/*=MessageLoop::TYPE_DEFAULT*/) {
     g_top_platform = this;
 
     base::EnableTerminationOnHeapCorruption();
@@ -48,7 +48,7 @@ Platform::Platform() {
 
     CommandLine::Init(0, NULL);
 
-    main_loop_ = new MessageLoop(MessageLoop::TYPE_IO);
+    main_loop_ = new MessageLoop(type);
 
     base::Time::Now();
     base::TimeTicks::Now();

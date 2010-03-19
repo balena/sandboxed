@@ -19,7 +19,7 @@ namespace sandboxed {
 class SANDBOXED_DLL Platform
 {
 public:
-    Platform();
+    Platform(MessageLoop::Type type=MessageLoop::TYPE_DEFAULT);
     virtual ~Platform();
 
     static Platform *instance();
