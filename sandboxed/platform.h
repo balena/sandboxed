@@ -16,12 +16,14 @@
 
 namespace sandboxed {
 
-class SANDBOXED_DLL Platform
+class Platform
 {
 public:
     Platform(MessageLoop::Type type=MessageLoop::TYPE_DEFAULT);
     virtual ~Platform();
 
+    /** Get the global platform object.
+     */
     static Platform *instance();
 
     /** Process all pending events, but don't wait/sleep. Return as soon as
@@ -43,6 +45,8 @@ public:
 private:
     base::AtExitManager *exit_manager_;
     MessageLoop *main_loop_;
+
+    DISALLOW_EVIL_CONSTRUCTORS(Platform);
 };
 
 } // namespace sandboxed

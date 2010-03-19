@@ -26,7 +26,10 @@ public:
     BrokerImpl();
     virtual ~BrokerImpl();
 
-    virtual TargetProcess *spawnTarget(const wchar_t *arguments);
+    virtual ResultCode initialize();
+    virtual TargetPolicy* createPolicy();
+    virtual TargetProcess *spawnTarget(const wchar_t *arguments,
+                                       TargetPolicy* policy);
 
     virtual bool peekTargets(TargetProcess **process);
 
@@ -34,9 +37,9 @@ public:
     virtual void wakeup();
 
 protected:
-    sandbox::BrokerServices *mBrokerService;
-    std::vector<TargetProcessImpl *> mTargetProcesses;
-    HANDLE mWakeupEvent;
+    sandbox::BrokerServices          *mBrokerService;
+    std::vector<TargetProcessImpl *>  mTargetProcesses;
+    HANDLE                            mWakeupEvent;
 
     bool checkAllTargets(DWORD aTimeOut, DWORD *aResult);
 
@@ -57,22 +60,23 @@ Broker* Broker::instance() {
 
 BrokerImpl::BrokerImpl() {
     mBrokerService = sandbox::SandboxFactory::GetBrokerServices();
-    if (mBrokerService->Init() != 0) {
-        ::MessageBox(NULL, L"Failed to initialize the BrokerServices object",
-                           L"Error during initialization", MB_ICONERROR);
-    }
     mWakeupEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (mWakeupEvent == NULL){
-        ::MessageBox(NULL, L"Failed to Create the WakeupEvent",
-                           L"Error during initialization", MB_ICONERROR);
-    }
 }
 
 BrokerImpl::~BrokerImpl() {
     CloseHandle(mWakeupEvent);
 }
 
-TargetProcess *BrokerImpl::spawnTarget(const wchar_t *arguments) {
+ResultCode BrokerImpl::initialize() {
+    return mBrokerService->Init();
+}
+
+TargetPolicy* BrokerImpl::createPolicy() {
+    return mBrokerService->CreatePolicy();
+}
+
+TargetProcess *BrokerImpl::spawnTarget(const wchar_t *arguments,
+                                       TargetPolicy* policy) {
     wchar_t exe_name[MAX_PATH];
     if (0 == GetModuleFileName(NULL, exe_name, MAX_PATH - 1)) {
         ::MessageBox(NULL, L"Failed to get name of current EXE",
@@ -80,19 +84,9 @@ TargetProcess *BrokerImpl::spawnTarget(const wchar_t *arguments) {
         return 0;
     }
 
-    sandbox::TargetPolicy* policy = mBrokerService->CreatePolicy();
-    policy->SetJobLevel(sandbox::JOB_LOCKDOWN,
-                        JOB_OBJECT_UILIMIT_HANDLES|
-                        JOB_OBJECT_UILIMIT_READCLIPBOARD|
-                        JOB_OBJECT_UILIMIT_WRITECLIPBOARD);
-    policy->SetTokenLevel(sandbox::USER_RESTRICTED_SAME_ACCESS,
-                          sandbox::USER_LIMITED);
-    policy->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
-
     sandbox::ResultCode result;
     PROCESS_INFORMATION target = {0};
     result = mBrokerService->SpawnTarget(exe_name, arguments, policy, &target);
-    policy->Release();
     if (result != sandbox::SBOX_ALL_OK)
         return 0; // TODO error!
 

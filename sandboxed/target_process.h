@@ -16,7 +16,7 @@
 
 namespace sandboxed {
 
-class SANDBOXED_DLL TargetProcess
+class TargetProcess
 {
 public:
     virtual ~TargetProcess() {}

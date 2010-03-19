@@ -7,6 +7,7 @@
 # found in the LICENSE file.
 
 ADD_SUBDIRECTORY(poc)
+ADD_SUBDIRECTORY(qtpoc)
 ADD_SUBDIRECTORY(unittest)
 
 # Modeline for vim: set tw=79 et ts=4:

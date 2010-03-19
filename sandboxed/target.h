@@ -16,12 +16,17 @@
 
 namespace sandboxed {
 
-class SANDBOXED_DLL Target
+using sandbox::ResultCode;
+
+class Target
 {
 public:
     static Target *instance();
 
     virtual ~Target() {}
+
+    virtual ResultCode initialize()=0;
+    virtual void lowerToken()=0;
 
     virtual RPC::Client *client() const=0;
     virtual RPC::Server *server() const=0;

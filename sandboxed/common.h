@@ -16,20 +16,6 @@
 #include <base/message_loop.h>
 #include <sandbox/src/sandbox.h>
 
-// By default, we won't supply a DLL library (use at your own risk):
-#ifdef _MSC_VER
-#if defined(_DLL)
-    #define SANDBOXED_DLL __declspec(dllexport)
-#else
-    #define SANDBOXED_DLL __declspec(dllimport)
-#endif
-#endif // _MSC_VER
-
-// This is for those who wants to deploy simple static libraries:
-#ifndef SANDBOXED_DLL
-#define SANDBOXED_DLL
-#endif
-
 #endif // SANDBOXED_BASE_H
 
 /* Modeline for vim: set tw=79 et ts=4: */

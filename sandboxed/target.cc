@@ -18,11 +18,14 @@
 #include <base/thread.h>
 #include <base/waitable_event.h>
 #include <base/condition_variable.h>
+#include <sandbox/src/sandbox_factory.h>
 #include <sandbox/src/win_utils.h>
 
 #include <map>
 
 namespace sandboxed {
+
+extern sandbox::TargetServices* g_target_service;
 
 class TargetImpl : public Target,
                    public sandbox::SingletonBase<TargetImpl>
@@ -31,12 +34,16 @@ public:
     TargetImpl();
     virtual ~TargetImpl();
 
+    virtual ResultCode initialize();
+    virtual void lowerToken();
+
     virtual RPC::Client *client() const;
     virtual RPC::Server *server() const;
 
     virtual void shutdown();
 
 private:
+    sandbox::TargetServices      *mTargetServices;
     base::Thread                  mThread;
     scoped_ptr<IPC::ChannelProxy> mChannelProxy;
     scoped_ptr<RPC::ClientImpl>   mClientRPC;
@@ -54,28 +61,43 @@ Target *Target::instance() {
 TargetImpl::TargetImpl()
     : mThread("TargetChannel")
 {
-    base::Thread::Options options;
-    options.message_loop_type = MessageLoop::TYPE_IO;
-    mThread.StartWithOptions(options);
-
-    mClientRPC.reset(new RPC::ClientImpl);
-    mServerRPC.reset(new RPC::ServerImpl);
-
-    IPC::ChannelProxy::MessageFilter *filter =
-        mClientRPC->createFilter();
-    IPC::Channel::Listener *listener =
-        mServerRPC->createListener();
-
-    std::ostringstream ss;
-    ss << ::GetCurrentProcessId();
-    mChannelProxy.reset(new IPC::ChannelProxy(ss.str(), IPC::Channel::MODE_CLIENT,
-        listener, filter, mThread.message_loop()));
-
-    mClientRPC->setChannelProxy(mChannelProxy.get());
-    mServerRPC->setChannelProxy(mChannelProxy.get());
+    mTargetServices = sandbox::SandboxFactory::GetTargetServices();
 }
 
 TargetImpl::~TargetImpl() {
+
+}
+
+ResultCode TargetImpl::initialize() {
+    ResultCode result = mTargetServices->Init();
+
+    if (result == 0) {
+        base::Thread::Options options;
+        options.message_loop_type = MessageLoop::TYPE_IO;
+        mThread.StartWithOptions(options);
+
+        mClientRPC.reset(new RPC::ClientImpl);
+        mServerRPC.reset(new RPC::ServerImpl);
+
+        IPC::ChannelProxy::MessageFilter *filter =
+            mClientRPC->createFilter();
+        IPC::Channel::Listener *listener =
+            mServerRPC->createListener();
+
+        std::ostringstream ss;
+        ss << ::GetCurrentProcessId();
+        mChannelProxy.reset(new IPC::ChannelProxy(ss.str(), IPC::Channel::MODE_CLIENT,
+            listener, filter, mThread.message_loop()));
+
+        mClientRPC->setChannelProxy(mChannelProxy.get());
+        mServerRPC->setChannelProxy(mChannelProxy.get());
+    }
+
+    return result;
+}
+
+void TargetImpl::lowerToken() {
+    mTargetServices->LowerToken();
 }
 
 RPC::Client *TargetImpl::client() const {

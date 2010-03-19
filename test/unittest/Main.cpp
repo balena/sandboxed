@@ -26,18 +26,37 @@ LONG lRun = 0;
 
 namespace {
 
-DWORD WINAPI waitForTargets_Thread(LPVOID lpParam)
-{ 
+DWORD WINAPI waitForTargets_Thread(LPVOID lpParam) {
     sandboxed::TargetProcess *returning_process =
         sandboxed::Broker::instance()->waitForTargets();
     return 0;
 }
 
+sandboxed::TargetPolicy* createDefaultPolicy() {
+    sandboxed::TargetPolicy *policy =
+        sandboxed::Broker::instance()->createPolicy();
+    policy->SetJobLevel(sandbox::JOB_LOCKDOWN,
+                        JOB_OBJECT_UILIMIT_HANDLES|
+                        JOB_OBJECT_UILIMIT_READCLIPBOARD|
+                        JOB_OBJECT_UILIMIT_WRITECLIPBOARD);
+    policy->SetTokenLevel(sandbox::USER_RESTRICTED_SAME_ACCESS,
+                          sandbox::USER_LIMITED);
+    policy->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
+    return policy;
+}
+
+sandboxed::TargetProcess *spawnTarget() {
+    sandboxed::TargetPolicy *policy = createDefaultPolicy();
+    sandboxed::TargetProcess *process =
+        sandboxed::Broker::instance()->spawnTarget(L"", policy);
+    policy->Release();
+    return process;
+}
+
 } // empty namespace
 
 TEST(Sandboxed_Broker, SpawnSimple) {
-    sandboxed::TargetProcess *process =
-        sandboxed::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process = spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -56,7 +75,7 @@ TEST(Sandboxed_Broker, PeekTargets) {
     
     sandboxed::TargetProcess *process, *returning_process;
    
-    process = sandboxed::Broker::instance()->spawnTarget();
+    process = spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -78,7 +97,7 @@ TEST(Sandboxed_Broker, PeekTargets) {
 TEST(Sandboxed_Broker, Thread) {
     LONG last = lRun;
 
-    sandboxed::TargetProcess *process = sandboxed::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process = spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -106,8 +125,7 @@ TEST(Sandboxed_Broker, Thread) {
 TEST(Sandboxed_Broker, VoidFunc) {
     
     // Create a new process
-    sandboxed::TargetProcess *process =
-        sandboxed::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process = spawnTarget();
     ASSERT_TRUE(process);
     process->client()->waitForConnection();
 
@@ -130,8 +148,7 @@ TEST(Sandboxed_Broker, VoidFunc) {
 TEST(Sandboxed_Broker, Message) {
     
     // Create a new process
-    sandboxed::TargetProcess *process =
-        sandboxed::Broker::instance()->spawnTarget();
+    sandboxed::TargetProcess *process = spawnTarget();
     ASSERT_TRUE(process);
 
     process->client()->waitForConnection();
@@ -216,8 +233,7 @@ TEST(Sandboxed_Broker, MoreProcess) {
     std::vector<sandboxed::TargetProcess *> processList;
 
     for (i = 0; i < MAXIMUM_WAIT_OBJECTS+10; i++) {
-        sandboxed::TargetProcess *process =
-            sandboxed::Broker::instance()->spawnTarget();
+        sandboxed::TargetProcess *process = spawnTarget();
         ASSERT_TRUE(process);
         process->client()->waitForConnection();
         processList.push_back(process);
@@ -242,8 +258,8 @@ TEST(Sandboxed_Broker, MoreProcess) {
     }
 }
 
-void doBroker(int argc, char *argv[])
-{
+void doBroker(int argc, char *argv[]) {
+    sandboxed::Broker::instance()->initialize();
     ::testing::InitGoogleMock(&argc, argv);
     RUN_ALL_TESTS();
     getchar();
@@ -300,9 +316,12 @@ public:
 
 void doTarget(int argc, char *argv[])
 {
+    ++lRun;
+
     //Sleep(20000);
 
-    ++lRun;
+    sandboxed::Target::instance()->initialize();
+    sandboxed::Target::instance()->lowerToken();
 
     sandboxed::Target *target =
         sandboxed::Target::instance();

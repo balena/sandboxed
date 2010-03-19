@@ -14,7 +14,6 @@
 #include <base/process_util.h>
 #include <base/time.h>
 #include <base/timer.h>
-#include <sandbox/src/sandbox_factory.h>
 #include <sandbox/src/dep.h>
 
 namespace sandboxed {
@@ -35,15 +34,6 @@ Platform::Platform(MessageLoop::Type type/*=MessageLoop::TYPE_DEFAULT*/) {
         // /NXCOMPAT linker flag.
         // Enforces strong DEP support.
         sandbox::SetCurrentProcessDEP(sandbox::DEP_ENABLED);
-    }
-
-    // Get the interface pointer to the BrokerServices or TargetServices,
-    // depending who we are.
-    sandbox::BrokerServices* broker_service =
-        sandbox::SandboxFactory::GetBrokerServices();
-    if (!broker_service) {
-        sandbox::TargetServices* target_service =
-            sandbox::SandboxFactory::GetTargetServices();
     }
 
     CommandLine::Init(0, NULL);
