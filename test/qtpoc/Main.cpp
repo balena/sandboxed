@@ -10,6 +10,7 @@
 #include "MPMEventLoop.h"
 
 #include <QApplication>
+#include <QAction>
 #include <QtWebKit>
 
 #include <sandboxed/platform.h>
@@ -89,8 +90,7 @@ sandboxed::TargetPolicy* createDefaultPolicy() {
     sandboxed::TargetPolicy *policy =
         sandboxed::Broker::instance()->createPolicy();
 
-    policy->SetJobLevel(sandbox::JOB_LOCKDOWN,
-                        JOB_OBJECT_UILIMIT_ALL);
+    policy->SetJobLevel(sandbox::JOB_LIMITED_USER, JOB_OBJECT_UILIMIT_ALL);
 
     sandbox::TokenLevel initial_token = sandbox::USER_UNPROTECTED;
     if (win_util::GetWinVersion() > win_util::WINVERSION_XP) {
@@ -99,7 +99,7 @@ sandboxed::TargetPolicy* createDefaultPolicy() {
         initial_token = sandbox::USER_RESTRICTED_SAME_ACCESS;
     }
 
-    policy->SetTokenLevel(initial_token, sandbox::USER_LIMITED);
+    policy->SetTokenLevel(initial_token, initial_token);
     policy->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
     AddDllEvictionPolicy(policy);
 
@@ -130,33 +130,39 @@ void doBroker(int argc, char *argv[]) {
 }
 
 void doTarget(int argc, char *argv[]) {
-    sandboxed::Target *target =
-        sandboxed::Target::instance();
-
-    target->initialize();
-    target->lowerToken();
-
     // Create application
     QApplication::setGraphicsSystem( "raster" );
     QApplication app( argc, argv );
 
     QWebView webView;
+
+    QAction *copyAction = webView.pageAction(QWebPage::Copy);
+	copyAction->setShortcut(QKeySequence::Copy);
+    webView.addAction(copyAction);
+
     webView.load(QUrl("http://www.google.com"));
     webView.show();
 
     MPMEventLoop loop;
-    target->client()->waitForConnection();
-
     app.exec();
-
-    target->shutdown();
 }
 
 int main(int argc, char **argv) {
     sandboxed::Platform platform;
     if (sandboxed::Broker::instance())
         doBroker(argc, argv);
-    else
+    else {
+        sandboxed::Target *target =
+            sandboxed::Target::instance();
+
+        target->initialize();
+        target->client()->waitForConnection();
+        target->lowerToken();
+
         doTarget(argc, argv);
+
+        target->shutdown();
+    }
+
     return 0;
 }
