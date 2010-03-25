@@ -6,7 +6,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/chrome)
+FIND_PACKAGE(GTest REQUIRED)
+
+INCLUDE_DIRECTORIES(
+  ${CMAKE_SOURCE_DIR}/chrome
+  ${GTEST_INCLUDE_DIR}
+)
 
 ADD_EXECUTABLE(poc WIN32
   Main.cpp
@@ -18,6 +23,6 @@ ADD_EXECUTABLE(poc WIN32
 )
 
 ADD_DEPENDENCIES(poc chrome)
-TARGET_LINK_LIBRARIES(poc chrome)
+TARGET_LINK_LIBRARIES(poc chrome ${GTEST_LIBRARIES})
 
 # Modeline for vim: set tw=79 et ts=4:
