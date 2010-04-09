@@ -37,10 +37,10 @@ TargetProcessImpl::TargetProcessImpl(HANDLE process)
 }
 
 TargetProcessImpl::~TargetProcessImpl() {
-    mChannelProxy.reset();
     mClientRPC.reset();
     mServerRPC.reset();
-    mThread.Stop();
+    mChannelProxy.reset();
+
     ::CloseHandle(mProcess);
 }
 
